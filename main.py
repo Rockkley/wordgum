@@ -92,7 +92,6 @@ async def menu(call: types.CallbackQuery):
         if len(game.SessionData.dict[call.from_user.id]) > 2:
             await game.set_game(game.SessionData.call.get(call.from_user.id))
         else:
-
             await user_info.endgame(call)
 
 if __name__ == '__main__':
