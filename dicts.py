@@ -7,6 +7,8 @@ def return_dict(dict_data):
     elif dict_data == 'food_eng':
         return {'Carrot': 'Морковь', 'Bread': 'Хлеб', 'Apple': 'Яблоко', 'Orange': 'Апельсин', 'Cheese': 'Сыр',
                 'Cookie': 'Печенька', 'Salad': 'Салат', 'Sandwich': 'Сэндвич', 'Soup': 'Суп', 'Pizza': 'Пицца',
+                'Starter': 'Первое блюдо', 'Seafoods': 'Морепродукты', 'Side dish': 'Гарнир', 'Lasagna': 'Лазанья',
+                'Stew': 'Рагу', 'Meatballs': 'Фрикадельки', 'Flapjack': 'Блин', 'Cutlet': 'Отбивная'
                 }
 
     elif dict_data == 'animals_fin':

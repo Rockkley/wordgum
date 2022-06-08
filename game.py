@@ -1,33 +1,33 @@
 import random
 from aiogram import types
-from aiogram.types import CallbackQuery
-
 import dicts
-from new import bot, dp
+import parsers
 
 
 async def set_game(call):
-    # print(f'Категория - {call.data[4:-3]}, язык - {call.data[-3:]}')
     dict_data = call.data[4:-3]+'_'+call.data[-3:]
     dictionary = dicts.return_dict(dict_data)
-
     await run(dictionary, call)
-
-  #  print(f'Создан экземпляр игровой сессии для ID {call.from_user.id}\n'
-   #       f'Словарь - {dict_data}\n'
-   #       f'^ v ^ v ^ ')
 
 
 async def run(dictionary, call):
-    if call.from_user.id not in Answer.score.keys():
-        Answer.score[call.from_user.id] = 0
-        Answer.ten[call.from_user.id] = 0
-        Answer.cups[call.from_user.id] = 0
-        Answer.used_words[call.from_user.id] = []
+    if call.from_user.id not in SessionData.score.keys():
+        SessionData.score[call.from_user.id] = SessionData.ten[call.from_user.id] = \
+            SessionData.cups[call.from_user.id] = 0
+        SessionData.used_words[call.from_user.id] = []
 
-    Answer.lang[call.from_user.id] = call.data[-3:]
-    # Shuffle the chosen dictionary and slice it to 8 words for a new round
-    _ = list(dictionary.keys())
+    SessionData.lang[call.from_user.id] = call.data[-3:]
+    if len(SessionData.used_words[call.from_user.id]) != 0:
+        _f = dictionary
+        for i in range(len((SessionData.used_words[call.from_user.id]))):
+            for key, value in dict(_f).items():
+                if value == SessionData.used_words[call.from_user.id][i]:
+                    del _f[key]
+
+            _ = list(_f.keys())
+    else:
+        _ = list(dictionary.keys())
+
     random.shuffle(_)
     session_words = _[:8]
 
@@ -44,18 +44,20 @@ async def run(dictionary, call):
 
     emo_digits = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
 
-    await call.message.edit_text(f'🔹 Счёт - {Answer.score.get(call.from_user.id)} '
-                                 f'🏆 Кубков - {Answer.cups.get(call.from_user.id)} || Прогресс - {emo_digits[Answer.ten[call.from_user.id]]}<b>/</b>🔟\n\n'
+    await call.message.edit_text(f'🔹 Счёт - {SessionData.score.get(call.from_user.id)} '
+                                 f'🏆 Кубков - {SessionData.cups.get(call.from_user.id)} || '
+                                 f'Прогресс - {emo_digits[SessionData.ten[call.from_user.id]]}<b>/</b>🔟\n\n'
                                  f'Выбери правильный перевод. Кто такой {the_word.callback_data[1:]}?',
                                  reply_markup=markup, parse_mode='HTML')
 
-    Answer.a[call.from_user.id] = the_word.callback_data[1:]
-    Answer.call[call.from_user.id] = call
-    Answer.dict = dictionary
+    SessionData.answer[call.from_user.id] = the_word.callback_data[1:]
+    SessionData.call[call.from_user.id] = call
+    SessionData.dict[call.from_user.id] = dictionary
 
 
-class Answer:
-    a = {}
+class SessionData:
+    dict = {}
+    answer = {}
     call = {}
     score = {}
     ten = {}

@@ -5,16 +5,16 @@ def main_menu():
     main_menu_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='⚡️Играть', callback_data='lang_page')
+                InlineKeyboardButton(text='⚡️Играть',           callback_data='lang_page')
             ],
             [
-                InlineKeyboardButton(text='🎓Моя статистика', callback_data='stat_page')
+                InlineKeyboardButton(text='🎓Моя статистика',   callback_data='stat_page')
             ],
             [
                 InlineKeyboardButton(text='☄️ТОП 5 участников', callback_data='top_page')
             ],
             [
-                InlineKeyboardButton(text='📙Об игре', callback_data='about_page')
+                InlineKeyboardButton(text='📙Об игре',          callback_data='about_page')
             ]
         ]
     )
@@ -25,11 +25,11 @@ def lang_menu():
     language_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='🇺🇸 English', callback_data='play_eng'),
-                InlineKeyboardButton(text='🇫🇮 Suomi', callback_data='play_fin')
+                InlineKeyboardButton(text='🇺🇸 English',         callback_data='play_eng'),
+                InlineKeyboardButton(text='🇫🇮 Suomi',           callback_data='play_fin')
             ],
             [
-                InlineKeyboardButton(text='◀️Назад', callback_data='main_page'),
+                InlineKeyboardButton(text='◀️Назад',            callback_data='main_page'),
             ]
         ]
     )
@@ -40,7 +40,7 @@ def stat_menu():
     stat_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='◀️Назад', callback_data='main_page'),
+                InlineKeyboardButton(text='◀️Назад',            callback_data='main_page'),
             ]
         ]
     )
@@ -52,15 +52,15 @@ def category_menu(lang):
     cat_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text=f'Животные 🦄', callback_data='cat_animals'+lang),
-                InlineKeyboardButton(text=f'Еда 🌭', callback_data='cat_food'+lang),
+                InlineKeyboardButton(text=f'Животные 🦄',       callback_data='cat_animals'+lang),
+                InlineKeyboardButton(text=f'Еда 🌭',            callback_data='cat_food'+lang),
             ],
             [
-                InlineKeyboardButton(text=f'Город 🏙', callback_data='in_development'),
-                InlineKeyboardButton(text=f'Музыка 🎼', callback_data='in_development'),
+                InlineKeyboardButton(text=f'Город 🏙',          callback_data='in_development'),
+                InlineKeyboardButton(text=f'Музыка 🎼',         callback_data='in_development'),
             ],
             [
-                InlineKeyboardButton(text='◀️Назад', callback_data='lang_page'),
+                InlineKeyboardButton(text='◀️Назад',            callback_data='lang_page'),
             ]
         ]
     )
@@ -76,7 +76,7 @@ def about_page():
                                      url='https://www.tinkoff.ru/rm/samarin.evgeniy34/QKONl27816')
             ],
             [
-                InlineKeyboardButton(text='◀️Назад', callback_data='main_page')
+                InlineKeyboardButton(text='◀️Назад',            callback_data='main_page')
             ]
         ]
     )
