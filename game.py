@@ -1,7 +1,6 @@
 import random
 from aiogram import types
 import dicts
-import parsers
 
 
 async def set_game(call):
@@ -15,6 +14,7 @@ async def run(dictionary, call):
         SessionData.score[call.from_user.id] = SessionData.ten[call.from_user.id] = \
             SessionData.cups[call.from_user.id] = 0
         SessionData.used_words[call.from_user.id] = []
+        SessionData.wrong_words[call.from_user.id] = set()
 
     SessionData.lang[call.from_user.id] = call.data[-3:]
     if len(SessionData.used_words[call.from_user.id]) != 0:
@@ -42,11 +42,12 @@ async def run(dictionary, call):
     markup.add(types.InlineKeyboardButton('Завершить игру', callback_data='endgame_page'))
     the_word = random.choice(row)
 
-    emo_digits = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+    emoji_digits = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']  # 0-9 in emoji
 
     await call.message.edit_text(f'🔹 Счёт - {SessionData.score.get(call.from_user.id)} '
                                  f'🏆 Кубков - {SessionData.cups.get(call.from_user.id)} || '
-                                 f'Прогресс - {emo_digits[SessionData.ten[call.from_user.id]]}<b>/</b>🔟\n\n'
+                                 f'До кубка - {emoji_digits[SessionData.ten[call.from_user.id]]}<b>/</b>🔟\n'
+                                 f'Слов - {len(SessionData.used_words[call.from_user.id])} из {len(dicts.return_dict(call.data[4:-3]+"_"+call.data[-3:]))}\n'
                                  f'Выбери правильный перевод. Кто такой {the_word.callback_data[1:]}?',
                                  reply_markup=markup, parse_mode='HTML')
 
@@ -56,11 +57,13 @@ async def run(dictionary, call):
 
 
 class SessionData:
-    dict = {}
-    answer = {}
-    call = {}
-    score = {}
-    ten = {}
-    cups = {}
-    lang = {}
-    used_words = {}
+    # Every class dict has user_id's as keys
+    dict = {}  # Current dictionary
+    answer = {}  # Current answer
+    call = {}  # (?) Current callback data (?)
+    score = {}  # Current score
+    ten = {}  # Counting to ten right answers in a row
+    cups = {}  # Counting of cups
+    lang = {}  # Current language
+    used_words = {}  # Words that has been guessed
+    wrong_words = {}  # Words that hasn't been guessed

@@ -1,6 +1,8 @@
 import sqlite3
 from aiogram import types
 from datetime import datetime
+
+import dicts
 import game
 from prettytable import PrettyTable as pt
 import keyboards
@@ -40,6 +42,7 @@ class UserInfoParser:
         game.SessionData.score[call.from_user.id] = game.SessionData.ten[call.from_user.id] = game.SessionData.cups[
             call.from_user.id] = 0
         game.SessionData.used_words[call.from_user.id] = []
+        game.SessionData.wrong_words[call.from_user.id] = set()
 
     def main_menu_text(self, msg):
         # Forms Main page text
@@ -101,30 +104,29 @@ class UserInfoParser:
             language = '🇺🇸Английский'
 
         cat_text = f'<b>WordsGum - - Выберите категорию</b>\n' \
-                   f'{language} язык'
+                   f'{language} язык. Доступно {2+self.get_user_level(lang)//10} из 4 категорий.\n' \
+                   f'До открытия следующей категории осталось получить {10-int(str(self.get_user_level(lang))[-1])} кубков'
 
         return cat_text
 
     def after_game_text(self, call):
-        cups_result_text = ''
         if game.SessionData.cups.get(call.from_user.id) == 0:
             cups_result_text = 'Для получения 🏆 необходимо отгадать 10 слов.'
         else:
             cups_result_text = f'Получено 🏆 - {game.SessionData.cups.get(call.from_user.id)}'
 
-        return f'Вы завершили игру со счётом {game.SessionData.score.get(call.from_user.id)}.\n{cups_result_text}'
+        return f'Вы завершили игру со счётом {game.SessionData.score.get(call.from_user.id)}.\n{cups_result_text}\n'
 
     def top_page_text(self):
         self.cur.execute('SELECT * FROM users')
         users = sorted(self.cur.fetchall(), key=lambda user: user[2]+user[3], reverse=True)
-
+        self.cur.close()
         # Creating table
         tb = pt()
-
-        tb.field_names = ["№", "Имя", "🇺🇸", "🇫🇮", "Общий"]
+        tb.field_names = ["Имя", "🇺🇸", "🇫🇮", "Общий"]
         for i in range(5):
-            tb.add_row([i+1, users[i][1], users[i][2], users[i][3], users[i][4]])
+            tb.add_row([users[i][1], users[i][2], users[i][3], users[i][4]])
 
-        return f'<b>WordsGum- - ТОП 5 участников</b>\n  <pre>{str(tb)}</pre>'
+        return f'<b>WordsGum- - ТОП 5 участников</b>\n<i>из {len(users)}</i><pre>{str(tb)}</pre>'
 
 
