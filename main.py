@@ -6,10 +6,11 @@ from aiogram import types
 import keyboards
 import parsers
 import game
-import conf
+from configparser import ConfigParser
 
-API_TOKEN = conf.TELEGRAM_BOT_API_TOKEN
-bot = Bot(API_TOKEN)
+conf = ConfigParser()
+conf.read('conf.ini', encoding="UTF-8")
+bot = Bot(conf['MAIN']['bot_token'])
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
@@ -18,64 +19,66 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 async def start(msg: types.CallbackQuery):
     user_info = parsers.UserInfoParser(msg)
     await bot.send_message(chat_id=msg.from_user.id,
-                           reply_markup=keyboards.main_menu(),
-                           text=user_info.main_menu_text(msg),
+                           reply_markup=keyboards.show_main_menu(),
+                           text=user_info.show_main_menu_text(msg),
                            parse_mode='HTML')
 
 
 @dp.callback_query_handler()
-async def menu(call: types.CallbackQuery):
+async def show_main_menu(call: types.CallbackQuery):
+
     user_info = parsers.UserInfoParser(call)
     if call.data == 'lang_page':
         await call.message.edit_text(text='<b>WordsGum - - Меню игры</b>\nВыберите язык:',
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.lang_menu())
+                                     reply_markup=keyboards.show_lang_menu(parsers.scan_dicts()))
     if call.data == 'about_page':
-        await call.message.edit_text(text=parsers.about_text(),
+        await call.message.edit_text(text=conf['TEXTS']['about_bot_text'],
                                      disable_web_page_preview=True,
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.about_page())
+                                     reply_markup=keyboards.show_about_page_kb())
     if call.data == 'main_page':
-        await call.message.edit_text(text=user_info.main_menu_text(call),
+        await call.message.edit_text(text=user_info.show_main_menu_text(call),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.main_menu())
+                                     reply_markup=keyboards.show_main_menu())
     if call.data == 'top_page':
-        await call.message.edit_text(text=user_info.top_page_text(),
+        await call.message.edit_text(text=user_info.show_top_page_text(),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.stat_menu())
-    if call.data == 'endgame_page':
-        await user_info.endgame(call)
+                                     reply_markup=keyboards.show_stat_menu())
 
     if call.data == 'stat_page':
-        await call.message.edit_text(text=user_info._stat_menu_text(call),
+        await call.message.edit_text(text=user_info._show_stat_menu_text(call),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.stat_menu())
+                                     reply_markup=keyboards.show_stat_menu())
 
     if call.data.startswith('play'):
         user_level = user_info.get_user_level(call)
-        await call.message.edit_text(text=user_info._cat_menu_text(call),
+        await call.message.edit_text(text=user_info._show_cat_menu_text(call),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.category_menu(call,
-                                                                          2+user_info.get_user_level(call)//10))
+                                     reply_markup=keyboards.show_category_menu(call,
+                                                                               2+user_info.get_user_level(call)//10))
+    if call.data == 'endgame_page':
+        await user_info.endgame(call)
 
     if call.data.startswith('cat_'):
         try:
             await game.set_game(call)
         except Exception:
-            await call.answer('Раздел находится разработке. Try later!')
+            await call.answer(conf['TEXTS']['section_in_development'])
     if call.data == 'locked':
-        await call.answer(f'Вам не хватает {10-int(str(user_info.get_user_level(call))[-1])} '
-                          f'кубков для открытия следующей категории')
+        await call.answer(f"{conf['TEXTS']['not_enough_cups_to_open'][:14]} "
+                          f"{10-int(str(user_info.get_user_level(call))[-1])}"
+                          f"{conf['TEXTS']['not_enough_cups_to_open'][14:]}")
 
     if call.data.startswith('!'):
         if call.data[1:] == game.SessionData.answer.get(call.from_user.id):
-            await call.answer('Правильный ответ!')
+            await call.answer(conf['TEXTS']['correct_answer'])
             game.SessionData.score[call.from_user.id] += 1
             game.SessionData.ten[call.from_user.id] += 1
             game.SessionData.used_words[call.from_user.id].append(call.data[1:])
 
             if game.SessionData.ten[call.from_user.id] == 10:
-                await call.answer('🏆 Кубок получен!')
+                await call.answer(conf['TEXTS']['cup_achieved'])
                 lang = str(game.SessionData.lang[call.from_user.id]+'_score')
                 # Adding +1 cup to database
                 user_info.cur.execute(f'SELECT {lang} FROM users WHERE telegram_id = {call.from_user.id}')
@@ -88,7 +91,7 @@ async def menu(call: types.CallbackQuery):
                 game.SessionData.ten[call.from_user.id] = 0
 
         else:
-            await call.answer('❗️ У этого слова другой перевод ❗️')
+            await call.answer(conf['TEXTS']['incorrect_answer'])
             # Updating SessionData
             game.SessionData.wrong_words[call.from_user.id].add(call.data[1:])
             game.SessionData.ten[call.from_user.id] = 0

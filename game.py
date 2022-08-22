@@ -1,15 +1,18 @@
 import random
 from aiogram import types
 import dicts
+import main
 
 
 async def set_game(call):
+    main.conf.read('conf.ini', encoding="UTF-8")
     dict_data = call.data[4:-3]+'_'+call.data[-3:]
     dictionary = dicts.return_dict(dict_data)
     await run(dictionary, call)
 
 
 async def run(dictionary, call):
+    main.conf.read('conf.ini', encoding="UTF-8")
     if call.from_user.id not in SessionData.score.keys():
         SessionData.score[call.from_user.id] = SessionData.ten[call.from_user.id] = \
             SessionData.cups[call.from_user.id] = 0
@@ -44,10 +47,11 @@ async def run(dictionary, call):
 
     emoji_digits = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']  # 0-9 in emoji
 
-    await call.message.edit_text(f'🔹 Счёт - {SessionData.score.get(call.from_user.id)} '
+    await call.message.edit_text(f'{main.conf["TEXTS"]["score"]} {SessionData.score.get(call.from_user.id)} '
                                  f'🏆 Кубков - {SessionData.cups.get(call.from_user.id)} || '
                                  f'До кубка - {emoji_digits[SessionData.ten[call.from_user.id]]}<b>/</b>🔟\n'
-                                 f'Слов - {len(SessionData.used_words[call.from_user.id])} из {len(dicts.return_dict(call.data[4:-3]+"_"+call.data[-3:]))}\n'
+                                 f'Слов - {len(SessionData.used_words[call.from_user.id])} '
+                                 f'из {len(dicts.return_dict(call.data[4:-3]+"_"+call.data[-3:]))}\n'
                                  f'Выбери правильный перевод. Кто такой {the_word.callback_data[1:]}?',
                                  reply_markup=markup, parse_mode='HTML')
 

@@ -1,27 +1,21 @@
+import os
 import sqlite3
+from configparser import ConfigParser
+
 from aiogram import types
 from datetime import datetime
-
 import dicts
 import game
-from prettytable import PrettyTable as pt
+from prettytable import PrettyTable as Pt
 import keyboards
+import main
 
 
-def about_text():
-    return '<b>WordsGum - - Об игре:</b>\n'\
-           'Этот бот поможет вам легко выучить слова Английского и Финского языков.\n'\
-           'Выберите категорию, отвечайте на вопросы и зарабатывайте кубки.\n'\
-           'Следите за своим прогрессом в разделе <i>"Моя статистика"</i>.\n'\
-           'За каждые 10 правильно отгаданных слов вы получаете 1 кубок.\n\n'\
-           'Автор - Самарин Евгений aka Rockkley\n'\
-           '(@Evgeniy_Samarin, https://github.com/Rockkley)\n'\
-           '<pre>Вы можете помочь автору проекта материально любой суммой, нажав на кнопку ниже.</pre>\n'
-
-
-def welcome_text():
+def show_welcome_text():
+    main.conf.read('conf.ini', encoding="UTF-8")
     current_hour = datetime.now().hour
-    txt = {0: "🌖 Доброй ночи", 1: "🌅 Доброе утро", 2: "🌞 Добрый день", 3: "🌃 Добрый вечер"}
+    txt = {0: main.conf['TEXTS']['good_night'], 1: main.conf['TEXTS']['good_morning'],
+           2: main.conf['TEXTS']['good_day'], 3: main.conf['TEXTS']['good_evening']}
     return txt[current_hour//6]
 
 
@@ -34,20 +28,21 @@ class UserInfoParser:
         self.cur.execute(f'INSERT OR IGNORE INTO users '
                          f'VALUES("{msg.from_user.id}","@{msg.from_user.username}","0","0","1","0","0")')
         self.write_user_level(msg)
+        main.conf.read('conf.ini', encoding="UTF-8")
 
     async def endgame(self, call):
-        await call.message.edit_text(text=self.after_game_text(call),
+        await call.message.edit_text(text=self.show_after_game_text(call),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.main_menu())
+                                     reply_markup=keyboards.show_main_menu())
         game.SessionData.score[call.from_user.id] = game.SessionData.ten[call.from_user.id] = game.SessionData.cups[
             call.from_user.id] = 0
         game.SessionData.used_words[call.from_user.id] = []
         game.SessionData.wrong_words[call.from_user.id] = set()
 
-    def main_menu_text(self, msg):
+    def show_main_menu_text(self, msg):
         # Forms Main page text
         main_menu_text = f'<b>WordsGum - - Главное меню</b>\n' \
-                         f'{welcome_text()} {msg.from_user.username}\n' \
+                         f'{show_welcome_text()} {msg.from_user.username}\n' \
                          f'🔸 Ранг <b>{self.get_user_level(msg)} {self.get_user_degree(msg)}</b>'
         return main_menu_text
 
@@ -77,11 +72,12 @@ class UserInfoParser:
 
     def get_user_degree(self, msg):
         # Gets degree of a user
+        main.conf.read('conf.ini', encoding="UTF-8")
         user_level = self.get_user_level(msg)
         degree = {0: 'Новичок', 1: 'Говорун', 2: 'Толмач', 3: 'Лексикограф', 4: 'Слововяз'}
         return degree[user_level//10]
 
-    def _stat_menu_text(self, msg):
+    def _show_stat_menu_text(self, msg):
         # Forms statistic page text
         self.write_user_level(msg)
 
@@ -95,10 +91,12 @@ class UserInfoParser:
         self.conn.close()
         return stat_text
 
-    def _cat_menu_text(self, lang):
-        # Forms category page text
+    def _show_cat_menu_text(self, lang):
+        print(lang.data)
+
+        # Forms category page text # fixme
         language = ''
-        if lang.data[5:] == 'fin':
+        if lang.data[5:] == 'suo':
             language = '🇫🇮Финский'
         elif lang.data[5:] == 'eng':
             language = '🇺🇸Английский'
@@ -109,7 +107,7 @@ class UserInfoParser:
 
         return cat_text
 
-    def after_game_text(self, call):
+    def show_after_game_text(self, call):
         if game.SessionData.cups.get(call.from_user.id) == 0:
             cups_result_text = 'Для получения 🏆 необходимо отгадать 10 слов.'
         else:
@@ -117,16 +115,30 @@ class UserInfoParser:
 
         return f'Вы завершили игру со счётом {game.SessionData.score.get(call.from_user.id)}.\n{cups_result_text}\n'
 
-    def top_page_text(self):
+    def show_top_page_text(self):
         self.cur.execute('SELECT * FROM users')
         users = sorted(self.cur.fetchall(), key=lambda user: user[2]+user[3], reverse=True)
         self.cur.close()
         # Creating table
-        tb = pt()
+        tb = Pt()
         tb.field_names = ["Имя", "🇺🇸", "🇫🇮", "Общий"]
         for i in range(5):
             tb.add_row([users[i][1], users[i][2], users[i][3], users[i][4]])
 
         return f'<b>WordsGum- - ТОП 5 участников</b>\n<i>из {len(users)}</i><pre>{str(tb)}</pre>'
 
+
+def scan_dicts():
+    dir_list = os.listdir("dicts/")
+
+    langpacks_info = ConfigParser()
+    dicts_data = {}
+
+    for i in dir_list:
+        langpacks_info.read(f'dicts/{i}/info.ini', encoding="UTF-8")
+        dicts_data[i] = {
+            'flag': langpacks_info['MAIN']['flag'],
+            'categories': [x for x in os.listdir(f"dicts/{i}")]}
+
+    return dicts_data
 

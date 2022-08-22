@@ -33,4 +33,3 @@ def return_dict(dict_data):
     elif dict_data == 'city_eng':
         return {'City': 'Город', 'Street': 'Улица', 'Shop': 'Магазин', 'Traffic lights': 'Светофор',
                 'Subway': 'Метро', 'Park': 'Парк', 'Skyscraper': 'Небоскрёб', 'Restaurant': 'Ресторан'}
-
