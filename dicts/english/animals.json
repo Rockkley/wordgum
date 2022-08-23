@@ -1,0 +1,9 @@
+{
+  "title": "Животные \uD83E\uDD84",
+  "category_name": "animals",
+  "words": {"Dog": "Собака", "Cat": "Кошка", "Parrot": "Попугай", "Elephant": "Слон", "Bird": "Птица",
+                "Eagle": "Орёл", "Bug": "Жук", "Mouse": "Мышь", "Horse": "Лошадь", "Armadillo": "Броненосец",
+                "Snake": "Змея", "Wolf": "Волк", "Cow": "Корова", "Lion": "Лев", "Fly": "Муха", "Sheep": "Овца",
+                "Bull": "Бык", "Bear": "Медведь", "Fish": "Рыба", "Worm": "Червь", "Chicken": "Курица",
+                "Rooster": "Петух", "Rabbit": "Кролик"}
+}
