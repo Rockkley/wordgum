@@ -7,6 +7,7 @@ import keyboards
 import parsers
 import game
 from configparser import ConfigParser
+import sqlite3
 
 conf = ConfigParser()
 conf.read('conf.ini', encoding="UTF-8")
@@ -17,6 +18,7 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 # Main menu
 @dp.message_handler(commands=['start'])
 async def start(msg: types.CallbackQuery):
+
     user_info = parsers.UserInfoParser(msg)
     await bot.send_message(chat_id=msg.from_user.id,
                            reply_markup=keyboards.show_main_menu(),
@@ -31,7 +33,7 @@ async def show_main_menu(call: types.CallbackQuery):
     if call.data == 'lang_page':
         await call.message.edit_text(text='<b>WordsGum - - Меню игры</b>\nВыберите язык:',
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.show_lang_menu(parsers.scan_dicts()))
+                                     reply_markup=keyboards.show_lang_menu(await parsers.scan_dicts()))
     if call.data == 'about_page':
         await call.message.edit_text(text=conf['TEXTS']['about_bot_text'],
                                      disable_web_page_preview=True,
@@ -51,12 +53,12 @@ async def show_main_menu(call: types.CallbackQuery):
                                      parse_mode='HTML',
                                      reply_markup=keyboards.show_stat_menu())
 
-    if call.data.startswith('play'):
-        user_level = user_info.get_user_level(call)
+    if call.data.startswith('lang'):
+        # user_level = user_info.get_user_level(call)
         await call.message.edit_text(text=user_info._show_cat_menu_text(call),
                                      parse_mode='HTML',
-                                     reply_markup=keyboards.show_category_menu(call,
-                                                                               2+user_info.get_user_level(call)//10))
+                                     reply_markup=keyboards.show_category_menu(
+                                         call, 2+user_info.get_user_level(call)//10))
     if call.data == 'endgame_page':
         await user_info.endgame(call)
 
@@ -65,10 +67,11 @@ async def show_main_menu(call: types.CallbackQuery):
             await game.set_game(call)
         except Exception:
             await call.answer(conf['TEXTS']['section_in_development'])
+
     if call.data == 'locked':
-        await call.answer(f"{conf['TEXTS']['not_enough_cups_to_open'][:14]} "
-                          f"{10-int(str(user_info.get_user_level(call))[-1])}"
-                          f"{conf['TEXTS']['not_enough_cups_to_open'][14:]}")
+        locked_msg = conf['TEXTS']['not_enough_cups_to_open'].split()
+        locked_msg.insert(3, str(10-int(str(user_info.get_user_level(call))[-1])))
+        await call.answer(' '.join(locked_msg))
 
     if call.data.startswith('!'):
         if call.data[1:] == game.SessionData.answer.get(call.from_user.id):
@@ -106,4 +109,15 @@ async def show_main_menu(call: types.CallbackQuery):
             await user_info.endgame(call)
 
 if __name__ == '__main__':
+    conn = sqlite3.connect('./databases/users.db')
+    cur = conn.cursor()
+
+    create_users_table = open('./sql/create_users_table.sql')
+    cur.executescript(create_users_table.read())
+    create_users_table.close()
+
+    create_score_table = open('./sql/create_score_table.sql')
+    cur.executescript(create_score_table.read())
+    create_score_table.close()
+    cur.close()
     executor.start_polling(dp)

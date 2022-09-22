@@ -1,7 +1,7 @@
+import json
 import os
 import sqlite3
 from configparser import ConfigParser
-
 from aiogram import types
 from datetime import datetime
 import dicts
@@ -9,13 +9,14 @@ import game
 from prettytable import PrettyTable as Pt
 import keyboards
 import main
+from datetime import date
 
 
-def show_welcome_text():
+def show_welcome_text() -> str:
     main.conf.read('conf.ini', encoding="UTF-8")
     current_hour = datetime.now().hour
-    txt = {0: main.conf['TEXTS']['good_night'], 1: main.conf['TEXTS']['good_morning'],
-           2: main.conf['TEXTS']['good_day'], 3: main.conf['TEXTS']['good_evening']}
+    txt = [main.conf['TEXTS']['good_night'], main.conf['TEXTS']['good_morning'],
+           main.conf['TEXTS']['good_day'], main.conf['TEXTS']['good_evening']]
     return txt[current_hour//6]
 
 
@@ -26,8 +27,10 @@ class UserInfoParser:
         self.conn = sqlite3.connect('./databases/users.db')
         self.cur = self.conn.cursor()
         self.cur.execute(f'INSERT OR IGNORE INTO users '
-                         f'VALUES("{msg.from_user.id}","@{msg.from_user.username}","0","0","1","0","0")')
-        self.write_user_level(msg)
+                         f'VALUES(null,"{msg.from_user.id}","{msg.from_user.username}","{msg.from_user.first_name}",'
+                         f'"{msg.from_user.last_name}","1","{date.today()}")')
+        self.conn.commit()
+
         main.conf.read('conf.ini', encoding="UTF-8")
 
     async def endgame(self, call):
@@ -39,26 +42,17 @@ class UserInfoParser:
         game.SessionData.used_words[call.from_user.id] = []
         game.SessionData.wrong_words[call.from_user.id] = set()
 
-    def show_main_menu_text(self, msg):
+    def show_main_menu_text(self, msg) -> str:
         # Forms Main page text
         main_menu_text = f'<b>WordsGum - - Главное меню</b>\n' \
                          f'{show_welcome_text()} {msg.from_user.username}\n' \
                          f'🔸 Ранг <b>{self.get_user_level(msg)} {self.get_user_degree(msg)}</b>'
         return main_menu_text
 
-    def get_eng_cups(self, msg):
-        # Gets English language cups score of a user
-        self.cur.execute('SELECT eng_score FROM users WHERE telegram_id = ?', (msg.from_user.id,))
-        user_eng_cups = self.cur.fetchone()[0]
-        return user_eng_cups
+    def get_user_cups(self, msg, language):
+        self.cur.execute('SELECT ? FROM scores WHERE telegram_id = ?', (language, msg.from_user.id))
 
-    def get_fin_cups(self, msg):
-        # Gets Suomi language cups score of a user
-        self.cur.execute('SELECT fin_score FROM users WHERE telegram_id = ?', (msg.from_user.id,))
-        user_fin_cups = self.cur.fetchone()[0]
-        return user_fin_cups
-
-    def get_user_level(self, msg):
+    def get_user_level(self, msg) -> int:
         # Gets level of a user
         self.cur.execute('SELECT level FROM users WHERE telegram_id = ?', (msg.from_user.id,))
         user_level = self.cur.fetchone()[0]
@@ -66,18 +60,18 @@ class UserInfoParser:
 
     def write_user_level(self, msg):
         # Writes users level calculated of cups sum to the database
-        user_level = int(self.get_fin_cups(msg)) + int(self.get_eng_cups(msg))
+        user_level = 1  # fixme
         self.cur.execute(f'UPDATE users SET level = ? WHERE telegram_id = ?', (user_level, msg.from_user.id))
         self.conn.commit()
 
-    def get_user_degree(self, msg):
+    def get_user_degree(self, msg) -> str:
         # Gets degree of a user
         main.conf.read('conf.ini', encoding="UTF-8")
         user_level = self.get_user_level(msg)
-        degree = {0: 'Новичок', 1: 'Говорун', 2: 'Толмач', 3: 'Лексикограф', 4: 'Слововяз'}
+        degree = ('Новичок', 'Говорун', 'Толмач', 'Лексикограф', 'Слововяз')
         return degree[user_level//10]
 
-    def _show_stat_menu_text(self, msg):
+    def _show_stat_menu_text(self, msg) -> str:
         # Forms statistic page text
         self.write_user_level(msg)
 
@@ -85,8 +79,8 @@ class UserInfoParser:
                     f'Пользователь {msg.from_user.username}\n' \
                     f'ID - {msg.from_user.id}\n' \
                     f'🔸 Ранг <b>{self.get_user_level(msg)} {self.get_user_degree(msg)}</b>\n'\
-                    f'🏆 Кубки:\n' \
-                    f'🇺🇸: {self.get_eng_cups(msg)} 🇫🇮: {self.get_fin_cups(msg)}'
+                    f'🏆 Кубки:\n'
+                   # f'🇺🇸: {self.get_eng_cups(msg)} 🇫🇮: {self.get_fin_cups(msg)}'  # fixme
 
         self.conn.close()
         return stat_text
@@ -107,7 +101,7 @@ class UserInfoParser:
 
         return cat_text
 
-    def show_after_game_text(self, call):
+    def show_after_game_text(self, call) -> str:
         if game.SessionData.cups.get(call.from_user.id) == 0:
             cups_result_text = 'Для получения 🏆 необходимо отгадать 10 слов.'
         else:
@@ -115,7 +109,7 @@ class UserInfoParser:
 
         return f'Вы завершили игру со счётом {game.SessionData.score.get(call.from_user.id)}.\n{cups_result_text}\n'
 
-    def show_top_page_text(self):
+    def show_top_page_text(self) -> str:
         self.cur.execute('SELECT * FROM users')
         users = sorted(self.cur.fetchall(), key=lambda user: user[2]+user[3], reverse=True)
         self.cur.close()
@@ -128,17 +122,19 @@ class UserInfoParser:
         return f'<b>WordsGum- - ТОП 5 участников</b>\n<i>из {len(users)}</i><pre>{str(tb)}</pre>'
 
 
-def scan_dicts():
-    dir_list = os.listdir("dicts/")
+async def scan_dicts() -> dict:
+    lang_info = ConfigParser()
+    languages_and_flags = {}
 
-    langpacks_info = ConfigParser()
-    dicts_data = {}
+    for language in os.listdir("dicts/"):
+        lang_info.read(f'dicts/{language}/info.ini', encoding="UTF-8")
+        languages_and_flags[language] = lang_info['MAIN']['flag']
+    print(f'parsers -> scan_dicts -> keyboards \n{languages_and_flags}\n# # # # # ')
+    return languages_and_flags
 
-    for i in dir_list:
-        langpacks_info.read(f'dicts/{i}/info.ini', encoding="UTF-8")
-        dicts_data[i] = {
-            'flag': langpacks_info['MAIN']['flag'],
-            'categories': [x for x in os.listdir(f"dicts/{i}")]}
 
-    return dicts_data
-
+def scan_lang(categories_list, lang) -> dict:
+    for category in categories_list[lang]:
+        with open(f'dicts/{lang}/{category}') as file:
+            data = json.load(file)["title"]
+        return data

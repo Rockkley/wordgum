@@ -5,14 +5,12 @@ import main
 
 
 async def set_game(call):
-    main.conf.read('conf.ini', encoding="UTF-8")
     dict_data = call.data[4:-3]+'_'+call.data[-3:]
     dictionary = dicts.return_dict(dict_data)
     await run(dictionary, call)
 
 
 async def run(dictionary, call):
-    main.conf.read('conf.ini', encoding="UTF-8")
     if call.from_user.id not in SessionData.score.keys():
         SessionData.score[call.from_user.id] = SessionData.ten[call.from_user.id] = \
             SessionData.cups[call.from_user.id] = 0
