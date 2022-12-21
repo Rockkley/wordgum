@@ -8,10 +8,11 @@ import parsers
 import game
 from configparser import ConfigParser
 import sqlite3
+import os
 
 conf = ConfigParser()
 conf.read('conf.ini', encoding="UTF-8")
-bot = Bot(conf['MAIN']['bot_token'])
+bot = Bot(os.getenv('BOT_TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
