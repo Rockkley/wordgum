@@ -4,7 +4,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import main
 import os
 import parsers
-import testings
 
 
 def show_main_menu() -> InlineKeyboardMarkup:
