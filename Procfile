@@ -1,1 +1,1 @@
-bot: python new.py
+bot: python main.py
